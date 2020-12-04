@@ -10,11 +10,20 @@ import (
 	"github.com/hraban/opus"
 )
 
+// SampleData contains sample encoded data
+type SampleData struct {
+	N       int32
+	Samples []byte
+}
+
 // StartCapture capturing audio from default playback device
-func StartCapture() {
+func StartCapture() <-chan SampleData {
 	ctx, err := malgo.InitContext([]malgo.Backend{malgo.BackendWasapi}, malgo.ContextConfig{}, func(message string) {
 		fmt.Printf("LOG <%v>\n", message)
 	})
+
+	samples := make(chan SampleData)
+
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -60,11 +69,11 @@ func StartCapture() {
 		}
 	}
 
-	var playbackSampleCount uint32
-	var capturedSampleCount uint32
-	pCapturedSamples := make([]byte, 0)
+	// var playbackSampleCount uint32
+	// var capturedSampleCount uint32
+	// pCapturedSamples := make([]byte, 0)
 
-	sizeInBytes := uint32(malgo.SampleSizeInBytes(loopBack.Capture.Format))
+	// sizeInBytes := uint32(malgo.SampleSizeInBytes(loopBack.Capture.Format))
 	const sampleRate = 48000
 	const channels = 2 // mono; 2 for stereo
 
@@ -74,9 +83,9 @@ func StartCapture() {
 	}
 
 	onRecvFrames := func(pSample2, pSample []byte, framecount uint32) {
-		sampleCount := framecount * loopBack.Capture.Channels * sizeInBytes
+		// sampleCount := framecount * loopBack.Capture.Channels * sizeInBytes
 
-		newCapturedSampleCount := capturedSampleCount + sampleCount
+		// newCapturedSampleCount := capturedSampleCount + sampleCount
 
 		frameSizeMs := float32(framecount) * 1000 / sampleRate
 		switch frameSizeMs {
@@ -92,10 +101,10 @@ func StartCapture() {
 			panic(fmt.Sprintf("can not encode %s", err))
 		}
 		encodedData = encodedData[:n]
-		fmt.Printf("%d\n", n)
-		pCapturedSamples = append(pCapturedSamples, pSample...)
-
-		capturedSampleCount = newCapturedSampleCount
+		fmt.Printf("%d\n", frameSizeMs)
+		// pCapturedSamples = append(pCapturedSamples, pSample...)
+		samples <- SampleData{N: int32(frameSizeMs), Samples: encodedData}
+		// capturedSampleCount = newCapturedSampleCount
 
 	}
 
@@ -115,44 +124,41 @@ func StartCapture() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Press Enter to stop recording...")
-	fmt.Scanln()
+	// fmt.Println("Press Enter to stop recording...")
+	// fmt.Scanln()
 
-	device.Uninit()
+	// device.Uninit()
 
-	onSendFrames := func(pSample, nil []byte, framecount uint32) {
-		samplesToRead := framecount * playback.Playback.Channels * sizeInBytes
-		if samplesToRead > capturedSampleCount-playbackSampleCount {
-			samplesToRead = capturedSampleCount - playbackSampleCount
-		}
+	// onSendFrames := func(pSample, nil []byte, framecount uint32) {
+	// 	samplesToRead := framecount * playback.Playback.Channels * sizeInBytes
+	// 	if samplesToRead > capturedSampleCount-playbackSampleCount {
+	// 		samplesToRead = capturedSampleCount - playbackSampleCount
+	// 	}
 
-		copy(pSample, pCapturedSamples[playbackSampleCount:playbackSampleCount+samplesToRead])
+	// 	copy(pSample, pCapturedSamples[playbackSampleCount:playbackSampleCount+samplesToRead])
 
-		playbackSampleCount += samplesToRead
-		if playbackSampleCount == uint32(len(pCapturedSamples)) {
-			playbackSampleCount = 0
-		}
-	}
+	// 	playbackSampleCount += samplesToRead
+	// 	if playbackSampleCount == uint32(len(pCapturedSamples)) {
+	// 		playbackSampleCount = 0
+	// 	}
+	// }
 
-	fmt.Println("Playing...")
-	playbackCallbacks := malgo.DeviceCallbacks{
-		Data: onSendFrames,
-	}
+	// fmt.Println("Playing...")
+	// playbackCallbacks := malgo.DeviceCallbacks{
+	// 	Data: onSendFrames,
+	// }
 
-	device, err = malgo.InitDevice(ctx.Context, playback, playbackCallbacks)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	// device, err = malgo.InitDevice(ctx.Context, playback, playbackCallbacks)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(1)
+	// }
 
-	err = device.Start()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	// err = device.Start()
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(1)
+	// }
 
-	fmt.Println("Press Enter to quit...")
-	fmt.Scanln()
-
-	device.Uninit()
+	return samples
 }
