@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"unsafe"
 
 	"github.com/gen2brain/malgo"
 	"github.com/hraban/opus"
@@ -62,9 +61,9 @@ func StartCapture() <-chan SampleData {
 			fmt.Printf("    %d: %v, %s, [%s], channels: %d-%d, samplerate: %d-%d\n",
 				i, info.ID, info.Name(), e, full.MinChannels, full.MaxChannels, full.MinSampleRate, full.MaxSampleRate)
 			loopBack.Capture.DeviceID = info.ID.Pointer()
-			loopBack.Capture.Channels = full.MaxChannels
-			loopBack.Playback.Channels = full.MaxChannels
-			playback.Playback.Channels = full.MaxChannels
+			loopBack.Capture.Channels = 2
+			loopBack.Playback.Channels = 2
+			playback.Playback.Channels = 2
 			playback.Playback.DeviceID = info.ID.Pointer()
 		}
 	}
@@ -82,6 +81,9 @@ func StartCapture() <-chan SampleData {
 		panic(fmt.Sprintf("can not create encoder: %s", err))
 	}
 
+	encodedDataTotal := make([]byte, 0)
+	// consumed := 0
+
 	onRecvFrames := func(pSample2, pSample []byte, framecount uint32) {
 		// sampleCount := framecount * loopBack.Capture.Channels * sizeInBytes
 
@@ -92,18 +94,34 @@ func StartCapture() <-chan SampleData {
 		case 2.5, 5, 10, 20, 40, 60:
 			// Good.
 		default:
-			panic(fmt.Sprintf("Illegal frame size: (%f ms)", frameSizeMs))
+			return
 		}
 
 		encodedData := make([]byte, 1000)
-		n, err := enc.Encode(*(*[]int16)(unsafe.Pointer(&pSample)), encodedData)
+		dataToEncode := make([]int16, 0)
+
+		for i := 0; i < len(pSample); i += 2 {
+			dataToEncode = append(dataToEncode, int16(int16(pSample[i])|int16(pSample[i+1])<<8))
+		}
+
+		n, err := enc.Encode(dataToEncode, encodedData)
 		if err != nil {
-			panic(fmt.Sprintf("can not encode %s", err))
+			fmt.Println(fmt.Sprintf("can not encode %s", err))
+			return
 		}
 		encodedData = encodedData[:n]
-		fmt.Printf("%d\n", frameSizeMs)
+
+		encodedDataTotal = append(encodedDataTotal, encodedData...)
+
+		// consumed++
+		// fmt.Printf("consumed: %d", consumed)
+		// if consumed == 1000 {
+		// 	ioutil.WriteFile("out.ogg", encodedDataTotal, 0644)
+		// }
+
+		// fmt.Printf("%f\n", frameSizeMs)
 		// pCapturedSamples = append(pCapturedSamples, pSample...)
-		samples <- SampleData{N: int32(frameSizeMs), Samples: encodedData}
+		samples <- SampleData{N: int32(frameSizeMs * 2), Samples: encodedData}
 		// capturedSampleCount = newCapturedSampleCount
 
 	}
