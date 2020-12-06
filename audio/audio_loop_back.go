@@ -3,7 +3,6 @@ package audio
 import (
 	"encoding/binary"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"regexp"
 
@@ -83,13 +82,13 @@ func StartCapture() <-chan SampleData {
 		panic(fmt.Sprintf("can not create encoder: %s", err))
 	}
 
-	encodedDataTotal := make([]int16, 0)
-	consumed := 0
+	// encodedDataTotal := make([]int16, 0)
+	// consumed := 0
 
-	dec, err := opus.NewDecoder(sampleRate, channels)
-	if err != nil {
-	}
-	pcm := make([]int16, int(480*2))
+	// dec, err := opus.NewDecoder(sampleRate, channels)
+	// if err != nil {
+	// }
+	// pcm := make([]int16, int(480*2))
 
 	onRecvFrames := func(pSample2, pSample []byte, framecount uint32) {
 		// sampleCount := framecount * loopBack.Capture.Channels * sizeInBytes
@@ -118,23 +117,23 @@ func StartCapture() <-chan SampleData {
 		}
 		encodedData = encodedData[:n]
 
-		_, errr := dec.Decode(encodedData, pcm)
-		if errr != nil {
-			fmt.Println(fmt.Sprintf("can not decode %s", errr))
-		}
-		encodedDataTotal = append(encodedDataTotal, pcm...)
+		// _, errr := dec.Decode(encodedData, pcm)
+		// if errr != nil {
+		// 	fmt.Println(fmt.Sprintf("can not decode %s", errr))
+		// }
+		// encodedDataTotal = append(encodedDataTotal, pcm...)
 
-		consumed++
-		fmt.Printf("consumed: %d", consumed)
-		if consumed == 1000 {
-			b := make([]byte, 0)
-			for _, curD := range encodedDataTotal {
-				bb := make([]byte, 2)
-				binary.LittleEndian.PutUint16(bb, uint16(curD))
-				b = append(b, bb...)
-			}
-			ioutil.WriteFile("out2.pcm", b, 0644)
-		}
+		// consumed++
+		// fmt.Printf("consumed: %d", consumed)
+		// if consumed == 1000 {
+		// 	b := make([]byte, 0)
+		// 	for _, curD := range encodedDataTotal {
+		// 		bb := make([]byte, 2)
+		// 		binary.LittleEndian.PutUint16(bb, uint16(curD))
+		// 		b = append(b, bb...)
+		// 	}
+		// 	ioutil.WriteFile("out2.pcm", b, 0644)
+		// }
 
 		// fmt.Printf("%f\n", frameSizeMs)
 		// pCapturedSamples = append(pCapturedSamples, pSample...)
