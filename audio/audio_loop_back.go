@@ -1,7 +1,9 @@
 package audio
 
 import (
+	"encoding/binary"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"regexp"
 
@@ -81,8 +83,13 @@ func StartCapture() <-chan SampleData {
 		panic(fmt.Sprintf("can not create encoder: %s", err))
 	}
 
-	encodedDataTotal := make([]byte, 0)
-	// consumed := 0
+	encodedDataTotal := make([]int16, 0)
+	consumed := 0
+
+	dec, err := opus.NewDecoder(sampleRate, channels)
+	if err != nil {
+	}
+	pcm := make([]int16, int(480*2))
 
 	onRecvFrames := func(pSample2, pSample []byte, framecount uint32) {
 		// sampleCount := framecount * loopBack.Capture.Channels * sizeInBytes
@@ -97,11 +104,11 @@ func StartCapture() <-chan SampleData {
 			return
 		}
 
-		encodedData := make([]byte, 1000)
+		encodedData := make([]byte, 5000)
 		dataToEncode := make([]int16, 0)
 
 		for i := 0; i < len(pSample); i += 2 {
-			dataToEncode = append(dataToEncode, int16(int16(pSample[i])|int16(pSample[i+1])<<8))
+			dataToEncode = append(dataToEncode, int16(binary.LittleEndian.Uint16(pSample[i:i+2])))
 		}
 
 		n, err := enc.Encode(dataToEncode, encodedData)
@@ -111,17 +118,27 @@ func StartCapture() <-chan SampleData {
 		}
 		encodedData = encodedData[:n]
 
-		encodedDataTotal = append(encodedDataTotal, encodedData...)
+		_, errr := dec.Decode(encodedData, pcm)
+		if errr != nil {
+			fmt.Println(fmt.Sprintf("can not decode %s", errr))
+		}
+		encodedDataTotal = append(encodedDataTotal, pcm...)
 
-		// consumed++
-		// fmt.Printf("consumed: %d", consumed)
-		// if consumed == 1000 {
-		// 	ioutil.WriteFile("out.ogg", encodedDataTotal, 0644)
-		// }
+		consumed++
+		fmt.Printf("consumed: %d", consumed)
+		if consumed == 1000 {
+			b := make([]byte, 0)
+			for _, curD := range encodedDataTotal {
+				bb := make([]byte, 2)
+				binary.LittleEndian.PutUint16(bb, uint16(curD))
+				b = append(b, bb...)
+			}
+			ioutil.WriteFile("out2.pcm", b, 0644)
+		}
 
 		// fmt.Printf("%f\n", frameSizeMs)
 		// pCapturedSamples = append(pCapturedSamples, pSample...)
-		samples <- SampleData{N: int32(frameSizeMs * 2), Samples: encodedData}
+		samples <- SampleData{N: int32(frameSizeMs), Samples: encodedData}
 		// capturedSampleCount = newCapturedSampleCount
 
 	}
