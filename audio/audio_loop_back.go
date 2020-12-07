@@ -100,6 +100,7 @@ func StartCapture() <-chan SampleData {
 		case 2.5, 5, 10, 20, 40, 60:
 			// Good.
 		default:
+			fmt.Printf("bad frame size: %f", frameSizeMs)
 			return
 		}
 

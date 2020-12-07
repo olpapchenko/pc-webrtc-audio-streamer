@@ -1,11 +1,9 @@
 package main
 
 import (
-	"com.papchenko.audio.server/audio"
-	"com.papchenko.audio.server/rtc"
+	"com.papchenko.audio.server/http"
 )
 
 func main() {
-	samples := audio.StartCapture()
-	rtc.StartWebRtc(samples)
+	http.StartHttpServer()
 }
