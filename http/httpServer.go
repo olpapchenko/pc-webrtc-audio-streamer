@@ -19,7 +19,7 @@ func session(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&session)
 
-	fmt.Printf("received session descriptor: %s", session.Session)
+	fmt.Printf("received session descriptor: %s\n", session.Session)
 
 	if err != nil {
 		fmt.Printf("%s\n", err)
@@ -30,6 +30,7 @@ func session(w http.ResponseWriter, r *http.Request) {
 
 	samples := audio.StartCapture()
 	serverSessionDesc := rtc.StartWebRtc(samples, session.Session)
+	fmt.Printf("sending session descriptor: %s\n", serverSessionDesc)
 	w.Write([]byte(serverSessionDesc))
 }
 

@@ -18,7 +18,7 @@ func StartWebRtc(sampleData <-chan audio.SampleData, session string) string {
 	m := webrtc.MediaEngine{}
 
 	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
-		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 16000, Channels: 2, SDPFmtpLine: "stereo=1", RTCPFeedback: nil},
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: "audio/opus", ClockRate: 48000, Channels: 2, SDPFmtpLine: "stereo=1", RTCPFeedback: nil},
 		PayloadType:        111,
 	}, webrtc.RTPCodecTypeAudio); err != nil {
 		panic(err)
@@ -54,15 +54,18 @@ func StartWebRtc(sampleData <-chan audio.SampleData, session string) string {
 		<-iceConnectedCtx.Done()
 
 		for {
-
+			// start := time.Now()
 			data := <-sampleData
+			// elapsed := time.Since(start)
+
 			sampleDuration := time.Millisecond * time.Duration(int64(data.N))
 
 			if oggErr := audioTrack.WriteSample(media.Sample{Data: data.Samples, Duration: sampleDuration}); oggErr != nil {
 				panic(oggErr)
 			}
 
-			time.Sleep(sampleDuration)
+			// time.Sleep(sampleDuration - elapsed)
+			// fmt.Printf("c %s\n", elapsed)
 		}
 	}()
 

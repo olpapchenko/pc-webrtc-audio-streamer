@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/gen2brain/malgo"
 	"github.com/hraban/opus"
@@ -22,7 +23,7 @@ func StartCapture() <-chan SampleData {
 		fmt.Printf("LOG <%v>\n", message)
 	})
 
-	samples := make(chan SampleData)
+	samples := make(chan SampleData, 5000)
 
 	if err != nil {
 		fmt.Println(err)
@@ -90,7 +91,13 @@ func StartCapture() <-chan SampleData {
 	// }
 	// pcm := make([]int16, int(480*2))
 
+	prev := time.Now()
+	// make(chan []byte)
 	onRecvFrames := func(pSample2, pSample []byte, framecount uint32) {
+		start := time.Now()
+
+		fmt.Printf("lat: %s\n", time.Since(prev))
+		prev = start
 		// sampleCount := framecount * loopBack.Capture.Channels * sizeInBytes
 
 		// newCapturedSampleCount := capturedSampleCount + sampleCount
@@ -111,7 +118,10 @@ func StartCapture() <-chan SampleData {
 			dataToEncode = append(dataToEncode, int16(binary.LittleEndian.Uint16(pSample[i:i+2])))
 		}
 
+		// start := time.Now()
 		n, err := enc.Encode(dataToEncode, encodedData)
+		// fmt.Printf("e: %d\n", (int64(time.Now())-int64(start)) /time.Millisecond)
+
 		if err != nil {
 			fmt.Println(fmt.Sprintf("can not encode %s", err))
 			return
@@ -142,6 +152,10 @@ func StartCapture() <-chan SampleData {
 		// capturedSampleCount = newCapturedSampleCount
 
 	}
+
+	// go func() {
+
+	// }
 
 	fmt.Println("Recording...")
 	captureCallbacks := malgo.DeviceCallbacks{
