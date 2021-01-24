@@ -13,6 +13,11 @@ mobile phone and plug in your headphones to it.
 
 ![UseCase](UseCase.jpg?raw=true)
 
+### How to build.
+```sh
+ go build main.go
+```
+
 ### Used libs:
 * [malgo](https://github.com/gen2brain/malgo)
 * [pion](https://github.com/pion/webrtc)
