@@ -8,7 +8,7 @@ let pc = new RTCPeerConnection({
     ]                                             
   }) 
   let log = msg => {
-    document.getElementById('div').innerHTML += msg + '<br>'
+    console.log(msg);
   }
   
   pc.ontrack = function (event) {
@@ -61,4 +61,22 @@ let pc = new RTCPeerConnection({
       alert(e)
     }
   }
+ 
+  let played = false;
+
+  document.addEventListener("DOMContentLoaded", function(event) { 
+    document.getElementById("start").onclick = event => {
+      let audioTag = document.querySelector("#remoteAudio > audio")
+      if(!played) {
+        audioTag.play();
+        event.target.innerHTML = "PAUSE";
+      } else {
+        audioTag.pause();
+        event.target.innerHTML = "START";
+      }
+      played = !played;
+    };
+  });
+
+
   
