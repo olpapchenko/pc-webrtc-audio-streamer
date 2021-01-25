@@ -18,6 +18,11 @@ mobile phone and plug in your headphones to it.
  go build main.go
 ```
 
+### Pre-built bin files
+For pre-built exe file refer to releases section.
+
+**Note:** bin file is so big - because go runtime is packed in it.
+
 ### Used libs:
 * [malgo](https://github.com/gen2brain/malgo)
 * [pion](https://github.com/pion/webrtc)
